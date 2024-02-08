@@ -27,6 +27,12 @@ header-includes:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+library(numDeriv)
+library(readxl)
+library(ggplot2)
+```
+
 \newpage
 
 # Ejercicio 1 
@@ -114,3 +120,217 @@ M
 
 ```
 Conculuya que el error absoluto es de 1.622911e-15 al utilizar la metodología de Muestreo por Importancia.
+
+\newpage
+
+# Ejercicio 5
+
+**Una aseguradora tiene un producto llamado Doble Seguro de Vida (DSV) el cual paga 2 veces la suma asegurada si la persona fallece antes de los 60 años, paga 1 suma asegurada cuando la persona cumple los 60 años (si no ha fallecido) y paga 1 suma asegurada si fallece después de los 60 años.**  
+**Construya con la ayuda de un MCMC la distribución de los pagos por año de que se espera de este seguro. Use al menos 10 000 iteraciones. Y muestre Histograma.**
+
+Primero abrimos la base de datos de mortalidad, luego filtramos para obtener los datos de un hombre nacido en 1994.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+tabla_vida_original <- read_excel("tabla.xls")
+
+#filtrando por año de nacimiento y edad
+tabla_vida <- tabla_vida_original[(tabla_vida_original$ynac == 1994) & 
+                                    (tabla_vida_original$sex == 1),] 
+```
+
+Para realizar la simulación primero definimos algunos aspectos como semilla, numero de iteraciones, vector de mortalidad (filtrado para mortalidades de 30 años en adelante), longitud del vector y un vector vacio donde almacenar los resultados.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+set.seed(2024)
+iteraciones <- 10^4
+vec_qx <- tabla_vida$qx[25:length(tabla_vida$qx)]
+n <- length(vec_qx)
+vec_resultados<-rep(0,iteraciones)
+
+for(i in c(1:iteraciones)){
+  U<-runif(n)
+  t <- 1
+  cont <- 1
+  while(t == 1){
+    if(U[cont]>vec_qx[cont]) #Aqui se decide si la persona sobrevive o muere
+      {cont<-cont+1
+    }else{
+      t<-0
+      }
+  }
+  vec_resultados[i]<-cont-1
+}
+```
+
+Ahora podemos observar la distribución de muertes:
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+plot(density(vec_resultados))
+```
+
+Para poder obtener la distribución de pagos por año, lo que hacemos es considerar que cada muerte después de 30 años (60 años del individuo) representa un pago, pero si la persona muere antes de los próximos 30 años se consideran 2 pagos, por lo que añadimos una observación extra en ese caso.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+for (i in 1:length(vec_resultados)){
+  if(vec_resultados[i] < (60-30)){
+    vec_resultados <- c(vec_resultados, vec_resultados[i])
+  }
+}
+```
+
+Graficando el resultado:
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+plot(density(vec_resultados))
+```
+
+
+\newpage
+
+# Ejercicio 6
+
+**Usando el Algoritmo de Metropolis-Hastings construya una muestra de** $Z=X_1−X_2$ **donde **$𝑋_1\sim𝑁(𝜇,𝜎^2)$ **y** $𝑋_2\sim𝑁(𝜇/2,𝜎^2/4)$**, considere para este ejercicio** $𝜇=𝜎=4$.  
+
+a. Gráfique la distribución de $𝑍$ junto con las medias de $𝑋_1$,$𝑋_2$.  
+
+Primero definiremos los parámetros $𝜇=𝜎=4$, además, como $Z=X_1−X_2$, entonces $Z$ sigue una distribución $Z\sim𝑁(𝜇-𝜇/2,𝜎^2+𝜎^2/4)$. Luego definimos la funcion fPI.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+mu <- 4
+sigma <- 4
+
+mu_z <- 4-(4/2)
+sigma_z <- 4+(4/4) #En realidad es sigma^2
+
+fPI = function(x)
+{
+  fx = exp( -((x - mu_z)^2/(2*(sigma_z))))/(sqrt(2*pi*sigma_z))
+  return(fx)
+}
+```
+
+Ahora podemos mostrar la distribución de $Z$:
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+curve(fPI(x), from=-5,to=9, main="Distribucion de Z",xlab="x",ylab="f(x)")
+abline(v = 4, lty = 3) #Media de x1
+abline(v = 2, lty = 3) #Media de x2
+```
+
+b. Gráfique la distribución (histograma) de la muestra MCMC del algoritmo junto con las medias de $𝑋_1$,$𝑋_2$.  
+
+Primero definimos la funcion fpK y luego aplicamos el algoritmo
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+#Usaremos dist cauchy para el proceso de markov
+fpK = function(x,y){
+  pK = dcauchy(y,location = x) #x es el centro del pico de la distribución.
+  return(pK)
+}
+
+#Aplicando el algoritmo
+N = 10^5 # Número de Iteraciones
+L = 1000 # periodo quemado (burn in)
+
+MCMC = matrix(data = 0, nrow = N, ncol = 12)
+colnames(MCMC) =
+  c("x","y","PIx","PIy","Kxy","Kyx","Rxy","Ryx","Mxy","Myx","Fxy","Salto")
+# 1. Inicial con un valor arbitrario de x del dominio de distribución
+x = runif(1,-50,50)
+
+for (i in 1:N){
+  # 2. Generamos la propuesta con una distribucion arbitraria
+  y = rcauchy(1,location = x) #Valor aleatorio según X
+  
+  #3. Tasa de Aceptación
+  PIx = fPI(x)
+  PIy = fPI(y)
+  Kxy = fpK(x,y)
+  Kyx = fpK(y,x)
+  Rxy = (PIy*Kyx) / (PIx*Kxy)
+  Ryx = (PIx*Kxy) / (PIy*Kyx)
+  # Matriz estocástica de los estados de la distribución estacionaria
+  if (x!=y){
+    Mxy = Kxy*min(1,Rxy)
+    Myx = Kyx*min(1,Ryx)
+  }
+  else
+  { Mxy = -1
+  Myx = -1
+  }
+  
+  #4. Criterio de Aceptacion o Rechazo
+  #Probabilidad de aceptación,runif(1)
+  Fxy = runif(1)
+  MCMC[i,] = c(x,y,PIx,PIy,Kxy,Kyx,Rxy,Ryx,Mxy,Myx,Fxy,0)
+  if (Fxy < Rxy)
+  {x = y
+  lsalto = 1
+  }
+  else
+  { lsalto = 0
+  }
+  MCMC[i,12] = lsalto
+}
+mcmc = MCMC[(L+1):N,"x"]
+```
+
+Ahora para mostrar el histograma:
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+media=mean(mcmc)
+
+hist(mcmc,
+freq = FALSE,
+main = "Distribucion de muestra MCMC",
+xlab = "x",
+ylab = "distribucion(x)",
+breaks = 200)
+abline(v=mu, col='blue', lwd=3)      #Media de X1
+abline(v=mu/2, col='red', lwd=3)     #Media de X2
+abline(v=media, col='violet', lwd=3) #Media de Z
+```
+
+
+
+c. Estime la media de la distribución resultante de $𝑍$.  
+La media de mcmc es: `r media`  
+
+d. Gráfique el Traceplot de muestra MCMC del algoritmo junto con las medias de $𝑋_1$,$𝑋_2$,$𝑍$.  
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+#Traceplot
+plot(mcmc,type="l",xlab = "x", ylab = "y", main = "Traceplot de muestra MCMC")
+abline(h=mu, col='blue', lwd=3)      #Media de X1
+abline(h=mu/2, col='red', lwd=3)     #Media de X2
+abline(h=media, col='violet', lwd=3) #Media de Z
+```
+
+e. El gráfico de Autocorrelación de la muestra MCMC del algoritmo.  
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+#Grafico de Autocorrelación
+acf(mcmc,main = "Autocorrelacion de muestra MCMC")
+```
+
+f. El gráfico de la convergencia de la media de la muestra MCMC del algoritmo.  
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+#Grafico convergencia de la media
+m=N-L
+acumulado<-cumsum(mcmc)/(1:m)
+plot(1:m,acumulado,col="blue",type="l",ylab="promedio",xlab="Iteraciones")
+```
+
+g. La tasa de aceptación del algoritmo.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+cat("Tasa de aceptación \n",
+    "NumeroSaltos/TotalIteraciones :" , mean(MCMC[,"Salto"]) ,"\n")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+
+```
