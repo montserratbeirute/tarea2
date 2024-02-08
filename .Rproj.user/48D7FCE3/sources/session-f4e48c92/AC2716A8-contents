@@ -1,0 +1,116 @@
+---
+title: "Tarea 2"
+author:
+- José Ignacio Rojas Zárate, C16911
+- Montserrat Beirute Abarca, C10997
+- Valeria Vásquez Venegas, C18373
+date: "`r format(Sys.Date(), '%d de %B de %Y', locale = 'es_ES')`"
+output:
+  pdf_document:
+    toc: yes
+    latex_engine: xelatex
+    number_sections: true
+    keep_tex: true
+  html_document:
+    theme: spacelab
+    highlight: arrow
+    toc: yes
+    toc_float: yes
+    lang: es-ES
+subtitle: Estadística Actuarial II
+header-includes:
+  - \usepackage[spanish]{babel}
+  - \usepackage{fontspec}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+\newpage
+
+# Ejercicio 1 
+
+**Usando un algoritmo de integración por Montecarlo estime ln(2) con un error absoluto de 10−3**
+
+Considere la siguiente integral: \[ \int_{0}^{1} \frac{\ln(x + 1)}{2} + \frac{1}{2} \, dx \]. 
+
+*Solución:* 
+
+Empezamos separando la integral en dos partes. Para \(\int \frac{\ln(x + 1)}{2} \, dx\): Realizamos la sustitución \(u = x + 1\) y \(du = dx\). Note que si \(x \rightarrow 0 \Rightarrow u \rightarrow 1\) y si \(x \rightarrow 1 \Rightarrow u \rightarrow 2\). Esta primera integral se convierte en: \( \frac{1}{2} \int_{1}^{2} \ln(u) \, du \)
+
+Ahora, se aplica la regla de integración por partes, donde \(m = \ln(u) \Rightarrow dm = \frac{1}{u} du\) y \(dv = 1 \Rightarrow v = u \):
+
+   \[ \frac{1}{2} \left( u \ln(u) \Big|_{1}^2 - \int_{1}^{2} u \, \frac{1}{u} du\right) \]
+   
+Esto se simplifica a: \( \frac{1}{2} \left(\ln(2) - 1 \right) = \frac{\ln(2)}{2} - \frac{1}{2} \).
+
+La otra parte de la integral original, \( \int_{0}^{1} \frac{1}{2} \, dx = \frac{1}{2}\):
+
+
+Por lo tanto, la solución a la integral es \( \frac{\ln(2)}{2} - \frac{1}{2} + \frac{1}{2} = \ln(2) \).
+
+Ahora, procedemos a aplicar el algoritmo de Montecarlo: 
+
+```{r, echo=TRUE, results='hide', message=FALSE, warning=FALSE}
+
+set.seed(147) # definimos una semilla
+n <-10^4 # tamaño de la muestra
+U <-runif(n) # genera un vector con distribución uniforme
+
+g <-Vectorize(function(x) (log(x + 1)/2) + (1/2) ) # construimos la función g 
+
+curve(g,0,1,col="lightblue4",lwd=1,main="Gráfico de g(X)")
+grid()  
+
+Y <- g(U) #genera el vector para cada observación
+acumulado<-cumsum(Y)/(1:n)
+plot(1:n,acumulado,col="lightblue4",type="l",ylab="Aproximación",xlab="Iteraciones")
+abline(h=integrate(g,0,1)$value,col="coral2",lwd=1)
+
+P_est1=mean(Y)
+
+e1 <-(abs(P_est1-log(2)))
+```
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+e1
+```
+Concluya que con la función considerada, el algrotimo de integración por Montecarlo arroja un error absoluto de 4.587881e-05 al estimar ln(2).
+
+
+\newpage
+
+# Ejercicio 2 
+
+**Usando la metodología de Muestreo por Importancia, si ** \(X \sim N(0.5,0.5)\) **estime:**
+
+a. \(P(X \leq -5)\)
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+pnorm(6,mean = 0.5,sd = (0.5^(1/2)),lower.tail = F)
+```
+Concluya que la \(P(X \leq -5) = 3.678924e-15\). 
+
+
+b. Estime el error absoluto de la estimación del punto a: 
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+
+n <-10^4 # Tamaño de la muestra
+A <-rexp(n) + 6
+
+g <-Vectorize(function(x) ((1/pi) * exp(-(x-0.5)^2)/(exp(-x+6))))
+
+Y2<-g(A)
+
+M<-matrix(c(mean(Y2),pnorm(6,mean = 0.5,sd = (0.5^(1/2)), lower.tail = F),
+            abs(mean(Y2)-pnorm(6,mean = 0.5,sd = (0.5^(1/2)), lower.tail = F)),
+            sqrt(var(Y2)/sqrt(10^4))),ncol=4, byrow=TRUE)
+
+colnames(M) <- c("Estimacion", "Valor Real","Error Absoluto","Error Estandar")
+
+M
+
+```
+Conculuya que el error absoluto es de 1.622911e-15 al utilizar la metodología de Muestreo por Importancia.

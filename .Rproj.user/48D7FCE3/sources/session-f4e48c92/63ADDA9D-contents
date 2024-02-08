@@ -41,7 +41,7 @@ g <- Vectorize(function(x) ((1/pi) * exp(-((2-x)/2*x)-0.5)^2))
 
 Y <- g(U)
 
-error_absoluto <- abs(mean(Y)-  pnorm(-5, mean = 0.5, sd = 0.5)) 
+error_absoluto <- abs(mean(Y)-  pnorm(6,mean = 0.5,sd = (0.5^(1/2))))
   
 # por integración por importancia
 
@@ -53,6 +53,7 @@ A <-rexp(n) + 6
 g <-Vectorize(function(x) ((1/pi) * exp(-(x-0.5)^2)/(exp(-x+5))))
 
 Y2<-g(A)
+
 
 
 M<-matrix(c(mean(Y2),pnorm(6,mean = 0.5,sd = (0.5^(1/2)), lower.tail = F),abs(mean(Y2)-pnorm(6,mean = 0.5,sd = (0.5^(1/2)), lower.tail = F)),sqrt(var(Y2)/sqrt(10^4))),ncol=4, byrow=TRUE)
