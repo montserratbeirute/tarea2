@@ -118,7 +118,7 @@
 \subtitle{Estadística Actuarial II}
 \author{José Ignacio Rojas Zárate, C16911 \and Montserrat Beirute
 Abarca, C10997 \and Valeria Vásquez Venegas, C18373}
-\date{07 de febrero de 2024}
+\date{08 de febrero de 2024}
 
 \begin{document}
 \maketitle
@@ -343,13 +343,17 @@ Para poder obtener la distribución de pagos por año, lo que hacemos es
 considerar que cada muerte después de 30 años (60 años del individuo)
 representa un pago, pero si la persona muere antes de los próximos 30
 años se consideran 2 pagos, por lo que añadimos una observación extra en
-ese caso.
+ese caso. Luego, consideramos que si la persona sobrevive a los 60 años,
+se le otorga un pago en esa fecha.
 
 \begin{Shaded}
 \begin{Highlighting}[]
 \ControlFlowTok{for}\NormalTok{ (i }\ControlFlowTok{in} \DecValTok{1}\SpecialCharTok{:}\FunctionTok{length}\NormalTok{(vec\_resultados))\{}
   \ControlFlowTok{if}\NormalTok{(vec\_resultados[i] }\SpecialCharTok{\textless{}}\NormalTok{ (}\DecValTok{60{-}30}\NormalTok{))\{}
 \NormalTok{    vec\_resultados }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(vec\_resultados, vec\_resultados[i])}
+\NormalTok{  \}}
+  \ControlFlowTok{if}\NormalTok{(vec\_resultados[i] }\SpecialCharTok{\textgreater{}=} \DecValTok{30}\NormalTok{)\{}
+\NormalTok{    vec\_resultados }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(vec\_resultados, }\DecValTok{60}\NormalTok{)}
 \NormalTok{  \}}
 \NormalTok{\}}
 \end{Highlighting}
@@ -541,12 +545,6 @@ Ahora para mostrar el histograma:
 \end{Shaded}
 
 \includegraphics{tarea2_files/figure-latex/unnamed-chunk-16-1.pdf}
-
-\begin{Shaded}
-\begin{Highlighting}[]
-\FunctionTok{par}\NormalTok{(}\AttributeTok{mfrow=}\FunctionTok{c}\NormalTok{(}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{))}
-\end{Highlighting}
-\end{Shaded}
 
 \begin{enumerate}
 \def\labelenumi{\alph{enumi}.}

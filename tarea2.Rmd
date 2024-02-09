@@ -165,13 +165,17 @@ Ahora podemos observar la distribución de muertes:
 plot(density(vec_resultados))
 ```
 
-Para poder obtener la distribución de pagos por año, lo que hacemos es considerar que cada muerte después de 30 años (60 años del individuo) representa un pago, pero si la persona muere antes de los próximos 30 años se consideran 2 pagos, por lo que añadimos una observación extra en ese caso.
+Para poder obtener la distribución de pagos por año, lo que hacemos es considerar que cada muerte después de 30 años (60 años del individuo) representa un pago, pero si la persona muere antes de los próximos 30 años se consideran 2 pagos, por lo que añadimos una observación extra en ese caso. Luego, consideramos que si la persona sobrevive a los 60 años, se le otorga un pago en esa fecha.
 ```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
 for (i in 1:length(vec_resultados)){
   if(vec_resultados[i] < (60-30)){
     vec_resultados <- c(vec_resultados, vec_resultados[i])
   }
+  if(vec_resultados[i] >= 30){
+    vec_resultados <- c(vec_resultados, 60)
+  }
 }
+
 ```
 
 Graficando el resultado:
