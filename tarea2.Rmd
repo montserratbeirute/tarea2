@@ -31,6 +31,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(numDeriv)
 library(readxl)
 library(ggplot2)
+library(readr)
 ```
 
 \newpage
@@ -120,6 +121,135 @@ M
 
 ```
 Conculuya que el error absoluto es de 1.622911e-15 al utilizar la metodología de Muestreo por Importancia.
+
+\newpage
+
+# Ejercicio 3
+
+
+**Usando el Algoritmo de Aceptación-Rechazo para aproximar el valor de $\alpha$, de una distribución gamma de parámetro $\alpha$, 1. Dada una muestra de 100 observaciones (ver valor de x en "Muestragamma.csv". Utilice como función auxiliar una distribución exponencial con parámetro 0.2.**
+
+
+a. Indique el valor estimado de $\alpha$.
+
+Primero se obtiene la muestra brindada.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+
+muestraGamma <- read_csv("muestraGamma.csv", 
+                         col_types = cols(...1 = col_skip()))
+```
+
+
+Luego se calcula la función de verosimilitud y la constante c, la cual corresponde al máximo de la verosimilitud.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+
+lik <- Vectorize(function(alpha) prod(dgamma(muestraGamma$x, shape = alpha)))
+c <- optimize(f = lik,int = range(muestraGamma), maximum = TRUE)$objective
+
+```
+
+
+Una vez calculados los datos anteriores, se procede con el algortimo de aceptación-rechazo.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+nsim <- 10^4
+
+set.seed(1234)
+U <- runif(nsim)
+rc <- rexp(nsim, rate = 0.2)
+ngen <- length(rc)
+
+Ver <- lik(rc)
+
+for (i in 1:nsim) {
+  while ((U[i]*c) > (Ver[i])) {
+    U[i] <- runif(1)
+    rc[i] <- rexp(1, 0.2)
+    Ver[i] <- lik(rc[i])
+    ngen = ngen + 1
+  }
+}
+```
+
+
+El valor estimado para $alpha$ es
+```{r, echo=FALSE, results='markup', message=FALSE, warning=FALSE}
+mean(rc)
+```
+
+b. Indique el número de generaciones, número medio de  generaciones y proporción de rechazos de la estimación realizada.
+
+
+```{r, echo=FALSE, results='markup', message=FALSE, warning=FALSE}
+cat("Número de generaciones: ", ngen, "\n Número medio de generaciones:", ngen/nsim, "\n Proporción de rechazos: ", 1- (nsim/ngen))
+```
+
+
+c. Determine un intervalo de credibilidad al 99% para el parámetro \alpha estimado.
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+q <- quantile(rc, c(0.01, 0.99))
+q
+```
+
+d. Aceptaría o rechazaría la hipótesis que $\alpha$ = 3, basados en el intervalo de credibilidad.
+
+Aceptaría, puesto que 3 está dentro del intervalo de credibilidad.
+
+
+# Ejercicio 4
+
+**Sea $f(x)=sin(x + \frac{cos(10x)}{3})$ para $x \in [-2,2]$. **
+
+a. Utilizando el algoritmo de recalentamiento simulado estime el mínimo global en [−2,2], con valor inicial en 1.5.
+
+La función a utilizar se ve así:
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+f<-function(x){sin(x+((cos(10*x))/(3)))}
+curve(f,col="violet",lwd=2, from=-2, n=1000, ylab="f(x)")
+```
+
+
+Se realiza el algoritmo de Recalentamiento.
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+
+resim <- function(f, alpha=0.5, s0=0, niter,mini=-Inf,maxi=Inf) {
+  s_n <- s0
+  estados<-rep(0,niter)
+  iter_count <- 0
+  for (k in 1:niter) {
+    estados[k]<-s_n
+    T <- (1 - alpha)^k
+    s_new <- rnorm(1, s_n, 1)
+    if(s_new<mini){s_new=mini}
+    if(s_new>maxi){s_new=maxi}
+    dif <- f(s_new) - f(s_n)
+    if (dif < 0) {
+      s_n = s_new
+      } else {
+        random <- runif(1,0,1)
+        if (random < exp(-dif/T)) {
+          s_n <- s_new
+        }
+        }
+    iter_count <- iter_count + 1
+    }
+  return(list(r=s_n,e=estados))
+}
+
+Resultado <-resim(f,0.1,1.5,1000,-2,2)
+```
+
+```{r, echo=FALSE, results='markup', message=FALSE, warning=FALSE}
+cat("El valor mínimo estimado es: ", Resultado$r)
+```
+
+
+b. Grafique el resultado de los estados donde estuvo la cadena de la estimación del punto a.
+
+```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
+plot(Resultado$e, main = "Resultados de la cadena" , xlab = "Indice de iteracion", ylab = "Estados")
+```
+
 
 \newpage
 
