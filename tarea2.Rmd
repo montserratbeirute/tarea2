@@ -172,7 +172,7 @@ for (i in 1:length(vec_resultados)){
     vec_resultados <- c(vec_resultados, vec_resultados[i])
   }
   if(vec_resultados[i] >= 30){
-    vec_resultados <- c(vec_resultados, 60)
+    vec_resultados <- c(vec_resultados, 30)
   }
 }
 
