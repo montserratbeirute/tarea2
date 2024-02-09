@@ -138,6 +138,7 @@ tabla_vida <- tabla_vida_original[(tabla_vida_original$ynac == 1994) &
 ```
 
 Para realizar la simulación primero definimos algunos aspectos como semilla, numero de iteraciones, vector de mortalidad (filtrado para mortalidades de 30 años en adelante), longitud del vector y un vector vacio donde almacenar los resultados.
+
 ```{r, echo=TRUE, results='markup', message=FALSE, warning=FALSE}
 set.seed(2024)
 iteraciones <- 10^4
@@ -172,7 +173,7 @@ for (i in 1:length(vec_resultados)){
     vec_resultados <- c(vec_resultados, vec_resultados[i])
   }
   if(vec_resultados[i] >= 30){
-    vec_resultados <- c(vec_resultados, 30)
+    vec_resultados <- c(vec_resultados, 60)
   }
 }
 

@@ -152,7 +152,70 @@ plot(Resultado$e)
 # Inciso 5 ---------------------------------------------------------------------
 
 
-SA <- 1000000
+tabla_vida_original <- read_excel("tabla.xls")
+
+#filtrando por año de nacimiento y edad
+tabla_vida <- tabla_vida_original[(tabla_vida_original$ynac == 1994) & 
+                                    (tabla_vida_original$sex == 1),] 
+
+
+set.seed(2024)
+iteraciones <- 10^4
+vec_qx <- tabla_vida$qx[25:length(tabla_vida$qx)]
+n <- length(vec_qx)
+vec_resultados<-rep(0,iteraciones)
+for(i in c(1:iteraciones)){
+  U<-runif(n)
+  t <- 1
+  cont <- 1
+  while(t == 1){
+    if(U[cont]>vec_qx[cont]) #Aqui se decide si la persona sobrevive o muere
+    {cont<-cont+1
+    }else{
+      t<-0
+    }
+  }
+  vec_resultados[i]<-cont-1
+}
+
+for (i in 1:length(vec_resultados)){
+  if(vec_resultados[i] < (60-30)){
+    vec_resultados <- c(vec_resultados, vec_resultados[i])
+  }
+  if(vec_resultados[i] >= 30){
+    vec_resultados <- c(vec_resultados, 30)
+  }
+}
+options(scipen = 999)
+conteos <- as.vector(table(vec_resultados))
+
+conteos <- conteos * 1000000
+
+conteos[31] <- conteos[31]
+
+m <- max(vec_resultados)
+
+pagos <- data.frame(Edad_Residual = 0:m, Frecuencia = conteos)
+
+library(ggplot2)
+library(cowplot)
+
+# Crear un histograma con barras separadas para cada año
+
+ggplot(pagos, aes(x = Edad_Residual, y = Frecuencia)) +
+  geom_bar(stat = "identity", fill = "lightblue", color = "black") +
+  scale_x_continuous(breaks = seq(0, max(df$Edad_Residual), by = 5)) +
+  labs(title = "Histograma de pagos esperados",
+       x = "Edad residual",
+       y = "Frecuencia") + theme_cowplot() 
+
+
+
+
+
+
+
+
 
 
 # Inciso 6 ---------------------------------------------------------------------
